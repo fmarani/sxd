@@ -1,0 +1,65 @@
+SXD - SXD Xfer Dump (aka Samba Xfer Dump)
+-----------------------------------------
+
+SXD is a particular kind of sniffer/protocol analyzer, it catch packets in a customizable manner and try to enqueue it in a connection..., after all checks, the packet is passed to a filter that will write the file on disk or do whatever it like...
+
+In listeners/ there is the code for catching packets, that can be normal sniffing, or arp hijacking, etc...
+In filters/ there is the code that analyze the application protocol, used for file transfer.
+
+To compile, just do:
+- make sxd
+
+It requires pthread and pcap...
+
+Developed on RH9 (Linux 2.6.0-test9) / Fedora core 1 (UML)
+
+
+LICENSE
+-------
+Copyright (C) 2003-2004 Federico Marani <flagz@users.sourceforge.net>
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version
+2 of the License, or (at your option) any later version.
+
+The author IS NOT RESPONSIBLE for any use of this program,
+express or implied, use it AT YOUR OWN RISK.
+
+See LICENSE for details...
+
+
+TODO
+----
+- Make a listener using diverter socket: useful in gateways, etc..
+- ncurses interface
+- graphical interface (?)
+- Add more filters.... (http, gnutella, dc, ftp)
+
+
+
+Make your own filter
+--------------------
+
+Making a filter is not so hard, you have to add function prototypes in streamassembler.h and add initialization stuff in filter_init() in streamassembler.c, and, obviously, your own filter under filters/...:), and edit Makefile adding your .c file to gcc line of make sxd.
+A filter need almost two functions, the isInteresting() used for ask to the filter if the data is interesting for the filter and pktin() for pass to the filter the data along with other infos, like syncronization state and direction of the stream. (see struct filter...)
+
+Now it support only SMB transfer (only read transfer) but will be extended...
+
+
+Make your own listener
+----------------------
+
+Making a listener is similar to a filter, you have to add function prototypes in listener.h and add initialization stuff in listener_init() in listener.c, and, obviously, your own listener under listeners/...:), and edit Makefile adding your .c file to gcc line of make sxd.
+Listeners can be of two types: CONCURRENT and WAIT
+CONCURRENT: this listener is activated CONCURRENTLY with the stream assembler, when the packet arrive, it have to be queued to pktqueue, and the stream assembler will get it...
+WAIT: the main function of the listener is activated and waited for termination, after that, concurrently with the stream assembler, it's activated the enqueue function of the listener that enqueue already captured packets.
+
+The CONCURRENT listener has one function, the main function, that will catch packets and call pktqueue_append to append packets to the queue.
+The WAIT listener has two functions, the main that listen for packets, and the enqueue function that, after the termination of main, will enqueue packets with pktqueue_append()...
+
+Now it support only normal sniff but, in nearly future, will be added something like an hijacker, because without something like it, the program is useless because we lose packets and, consequently, pieces of files...
+
+
+--------------------------------------
+by flagz <flagz@users.sourceforge.net>
